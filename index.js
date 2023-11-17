@@ -36,10 +36,23 @@ async function run() {
 
 
     //user related api
-    app.post('/api/v1/users', async(req, res) => {
-      const result = await userCollection.insertOne(req.body);
+    app.get('/api/v1/users', async(req, res) => {
+      const result = await userCollection.find().toArray();
       res.send(result);
     })
+
+    app.post('/api/v1/users', async(req, res) => {
+      const query = {email: req.body.email};
+      const existingUser = await userCollection.findOne(query);
+    
+      if(existingUser){
+        res.send({message: 'User already exists', insertedId: null});
+      } else {
+        const result = await userCollection.insertOne(req.body);
+        res.send(result);
+      }
+    })
+    
 
     app.get('/api/v1/menu', async(req, res) => {
       const result = await menuCollection.find().toArray();

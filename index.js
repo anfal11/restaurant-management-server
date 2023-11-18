@@ -58,13 +58,23 @@ async function run() {
         }
         req.user = decoded;
         next();
-      });
-      
-      
+      });     
+    }
+
+    //use verify admin after verify token
+    const verifyAdmin = (req, res, next) => {
+     const email = req.user.email;
+      const query = {email: email};
+      const user = userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if(!isAdmin){
+        return res.status(403).send({message: 'Forbidden Access'})
+      }
+      next();
     }
 
     //user related api
-    app.get('/api/v1/users', verifyToken, async(req, res) => {
+    app.get('/api/v1/users', verifyToken, verifyAdmin, async(req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
@@ -76,7 +86,11 @@ async function run() {
       }
       const query = {email: email};
       const user = await userCollection.findOne(query);
-      res.send(user);
+      let admin = false;
+      if(user){
+        admin = user?.role === 'admin';
+      }
+      res.send({admin});
     })
 
     app.post('/api/v1/users', async(req, res) => {
@@ -91,7 +105,7 @@ async function run() {
       }
     })
 
-    app.patch('/api/v1/users/admin/:id', async(req, res) => {
+    app.patch('/api/v1/users/admin/:id', verifyToken, verifyAdmin, async(req, res) => {
       const id = req.params.id;
       const filter = {_id: new ObjectId(id)};
       const updatedDoc = {$set: {role: 'admin'}};
@@ -100,7 +114,7 @@ async function run() {
     })
 
     
-    app.delete('/api/v1/users/:id', async(req, res) => {
+    app.delete('/api/v1/users/:id', verifyToken, verifyAdmin, async(req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)};
       const result = await userCollection.deleteOne(query);

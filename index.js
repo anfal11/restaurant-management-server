@@ -57,8 +57,8 @@ async function run() {
           return res.status(401).send({message: 'Unauthorized request'})
         }
         req.user = decoded;
-        next();
       });     
+      next();
     }
 
     //use verify admin after verify token
@@ -80,8 +80,9 @@ async function run() {
     })
 
     app.get('/api/v1/users/admin/:email', verifyToken, async(req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
+      console.log(83, req.params, req?.decoded?.email);
+      const email = req?.params?.email;
+      if (email !== req?.user?.email) {
         return res.status(403).send({message: 'Unauthorized request'})
       }
       const query = {email: email};
@@ -134,6 +135,9 @@ async function run() {
     // carts collection
     app.get('/api/v1/cart', async(req, res) => {
       const email = req.query.email;
+      if(!email){
+        return res.send({message: 'Email is required'})
+      }
       const query = {email: email};
       const result = await cartCollection.find(query).toArray();
       res.send(result);

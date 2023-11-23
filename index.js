@@ -127,10 +127,17 @@ async function run() {
       const result = await menuCollection.find().toArray();
       res.send(result);
     })
-    app.post('/api/v1/menu', async(req, res)=>{
+    app.post('/api/v1/menu', verifyToken, verifyAdmin, async(req, res)=>{
       const result = await menuCollection.insertOne(req.body);
       res.send(result);
     })
+    app.delete('/api/v1/menu/:id', verifyToken, verifyAdmin, async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await menuCollection.deleteOne(query);
+      res.send(result);
+    })
+
     app.get('/api/v1/reviews', async(req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);

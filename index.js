@@ -62,10 +62,10 @@ async function run() {
     }
 
     //use verify admin after verify token
-    const verifyAdmin = (req, res, next) => {
+    const verifyAdmin = async(req, res, next) => {
      const email = req.user.email;
       const query = {email: email};
-      const user = userCollection.findOne(query);
+      const user = await userCollection.findOne(query);
       const isAdmin = user?.role === 'admin';
       if(!isAdmin){
         return res.status(403).send({message: 'Forbidden Access'})
@@ -125,6 +125,10 @@ async function run() {
 //menu related apis
     app.get('/api/v1/menu', async(req, res) => {
       const result = await menuCollection.find().toArray();
+      res.send(result);
+    })
+    app.post('/api/v1/menu', async(req, res)=>{
+      const result = await menuCollection.insertOne(req.body);
       res.send(result);
     })
     app.get('/api/v1/reviews', async(req, res) => {

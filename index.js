@@ -128,7 +128,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/api/v1/menu', async(req, res) => {
+    app.get('/api/v1/menu/:id', async(req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)};
       const result = await menuCollection.findOne(query);
@@ -137,6 +137,14 @@ async function run() {
 
     app.post('/api/v1/menu', verifyToken, verifyAdmin, async(req, res)=>{
       const result = await menuCollection.insertOne(req.body);
+      res.send(result);
+    })
+
+    app.patch('/api/v1/menu/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc = {$set: req.body};
+      const result = await menuCollection.updateOne(filter, updatedDoc);
       res.send(result);
     })
 

@@ -211,11 +211,12 @@ async function run() {
     });
 
     app.get('/api/v1/payments/:email', verifyToken, async(req, res) => {
-      const query = { email: req.query.email };
+      const query = { email: req.params.email };
       if (req.params.email !== req?.user?.email) {
+        console.log(216, req.params, req?.decoded?.email);
         return res.status(403).send({message: 'Unauthorized request'})
       }
-      const result = await paymentCollection.find().toArray();
+      const result = await paymentCollection.find(query).toArray();
       res.send(result);
     })
 

@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 require('dotenv').config()
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -34,6 +35,7 @@ async function run() {
     const menuCollection = client.db("restaurantDB").collection("menu");
     const reviewCollection = client.db("restaurantDB").collection("reviews");
     const cartCollection = client.db("restaurantDB").collection("cart");
+    const paymentCollection = client.db("restaurantDB").collection("payment");
 
     //JWT related API
     app.post("/api/v1/jwt", async (req, res) => {
@@ -182,6 +184,55 @@ async function run() {
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     })
+
+    //payment intend
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;    
+      const amount = parseInt(price * 100);
+ 
+    
+      if (amount < 1) {
+        return res.status(400).send({ error: 'Invalid amount' });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: [
+          "card"
+        ],
+      });
+    
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post('/api/v1/payments', async (req, res) => {
+      let deleteResult;  // Declare deleteResult outside the try-catch block
+    
+      try {
+        const result = await paymentCollection.insertOne(req.body);
+    
+        const query = {
+          _id: {
+            $in: req.body.cartIds.map(id => new ObjectId(id))
+          }
+        };
+    
+        deleteResult = await cartCollection.deleteMany(query);
+    
+        console.log('Deleted cart items:', deleteResult);
+    
+        res.send({ result, deleteResult });
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        res.status(500).send({ error: 'Internal server error' });
+      }
+    });
+    
+    
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

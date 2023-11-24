@@ -185,6 +185,8 @@ async function run() {
       res.send(result);
     })
 
+
+
     //payment intend
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;    
@@ -207,6 +209,15 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+
+    app.get('/api/v1/payments/:email', verifyToken, async(req, res) => {
+      const query = { email: req.query.email };
+      if (req.params.email !== req?.user?.email) {
+        return res.status(403).send({message: 'Unauthorized request'})
+      }
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
+    })
 
     app.post('/api/v1/payments', async (req, res) => {
       let deleteResult;  // Declare deleteResult outside the try-catch block

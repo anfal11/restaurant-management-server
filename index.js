@@ -243,8 +243,57 @@ async function run() {
       }
     });
     
+    // stats or analytics
+    app.get("/api/v1/admin-stats", verifyToken, verifyAdmin, async (req, res) =>{
+        const users = await userCollection.estimatedDocumentCount();
+        const menu = await menuCollection.estimatedDocumentCount();
+        const orders = await paymentCollection.estimatedDocumentCount();
+        //this is not the best way
+        // const payments = await paymentCollection.find().toArray();
+        // const revenue = payments.reduce((total, payment) => total + payment.price, 0);
+
+        const payments = await paymentCollection.aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$price" }
+            }
+          }
+        ]).toArray();
+        const revenue = payments[0]?.totalRevenue || 0;
+        res.send({users , menu, orders, revenue});
+    })
     
+    // using aggregate pipeline
+    app.get('/order-stats', async (req, res) =>{
+      const result = await paymentCollection.aggregate([
+        {
+          $unwind: "$cartIds"
+        },
+        {
+          $lookup: {
+            from: "menu",
+            localField: "cartIds",
+            foreignField: "_id",
+            as: "cartItems"
+          
+          }
+        },
+        {
+          $unwind: "$cartItems"
+        },
+        // {
+        //   $group: {
+        //     _id: "$cartItems.name",
+        //     quantity: { $sum: 1 },
+        //     revenue: { $sum: "$cartItems.price" }
+        //   }
+        // }
+
+      ]).toArray();
+      res.send(result);
     
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
